@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger Pro - E2EE 真实端到端通讯节点</title>
+    
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 50% 50%, #12122c 0%, #080816 100%);
+            color: #e2e8f0; font-size: 14px; overflow: hidden; height: 100vh;
+        }
+
+        /* 现代高保真毛玻璃滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 0, 211, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 20, 147, 0.4); }
+
+        .container { display: flex; height: 100vh; width: 100vw; }
+        .hidden { display: none !important; }
+
+        /* ================= 视觉焕新：登录视窗 ================= */
+        .login-screen {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            background: url('data:image/svg+xml,<svg xmlns="http://w3.org" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(148,0,211,0.04)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+        }
+        .login-box {
+            background: rgba(15, 15, 35, 0.65); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 24px;
+            padding: 45px; width: 400px; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+            text-align: center; animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .login-title {
+            font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px;
+            background: linear-gradient(135deg, #a855f7, #f43f5e); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .login-subtitle { font-size: 13px; color: #64748b; margin-bottom: 35px; }
+
+        /* 统一输入框与按钮品质级质感 */
+        .input {
+            width: 100%; padding: 14px 18px; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; color: #f8fafc;
+            font-family: inherit; transition: all 0.25s ease; font-size: 14px;
+        }
+        .input:focus { outline: none; border-color: #a855f7; background: rgba(168, 85, 247, 0.05); box-shadow: 0 0 20px rgba(168, 85, 247, 0.15); }
+        .btn { width: 100%; padding: 14px 18px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
+        .btn-primary { background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; box-shadow: 0 8px 25px rgba(139, 92, 246, 0.25); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4); }
+        .btn-primary:active { transform: translateY(1px); }
+
+        /* ================= 主应用高端暗黑面板 ================= */
+        .sidebar {
+            width: 350px; background: rgba(10, 10, 22, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column;
+        }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+        .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .logo-text { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, #c084fc, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* 真实的个人卡片 */
+        .profile-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 12px; margin-top: 10px; }
+        .profile-id-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 6px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 8px; }
+        .profile-id-row:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+        /* 搜索框添加真实 ID 通讯 */
+        .search-area { padding: 16px 24px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+        .search-area .input { padding: 10px 14px; border-radius: 10px; font-size: 13px; }
+        .btn-search { width: auto; padding: 0 14px; border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.08); }
+        .btn-search:hover { background: rgba(255,255,255,0.1); border-color: #a855f7; }
+
+        .list-title { padding: 16px 24px 8px 24px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 1px; }
+        .contacts-list { flex: 1; overflow-y: auto; padding: 0 12px 12px 12px; }
+        
+        /* 真实会话项样式 */
+        .node-item { padding: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-radius: 14px; transition: all 0.2s; background: rgba(255,255,255,0.01); border: 1px solid transparent; }
+        .node-item:hover { background: rgba(255,255,255,0.03); border-color: rgba(168,85,247,0.2); }
+        .node-item.active { background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.4); }
+        
+        .avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; background: linear-gradient(135deg, #6366f1, #a855f7); font-size: 13px; box-shadow: 0 4px 12px rgba(99,102,241,0.2); }
+        .node-name { font-weight: 600; font-size: 13.5px; color: #f1f5f9; }
+        .node-id-preview { font-size: 11px; color: #64748b; margin-top: 2px; font-family: monospace; }
+
+        /* 右侧核心聊天舞台 */
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: rgba(5, 5, 12, 0.4); }
+        .chat-header { padding: 20px 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); display: flex; align-items: center; justify-content: space-between; background: rgba(10,10,22,0.2); }
+        .chat-body { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        
+        /* 完美契合的现代对话气泡 */
+        .bubble-row { display: flex; flex-direction: column; max-width: 65%; width: fit-content; animation: bubbleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .bubble-row.outbound { align-self: flex-end; align-items: flex-end; }
+        .bubble-row.inbound { align-self: flex-start; align-items: flex-start; }
+        @keyframes bubbleIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .bubble { padding: 12px 18px; border-radius: 18px; line-height: 1.5; font-size: 14px; word-break: break-all; }
+        .inbound .bubble { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; border-top-left-radius: 4px; }
+        .outbound .bubble { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border-top-right-radius: 4px; box-shadow: 0 4px 15px rgba(99,102,241,0.25); }
+        .bubble-meta { font-size: 11px; color: #475569; margin-top: 5px; display: flex; gap: 6px; align-items: center; }
+        .outbound .bubble-meta { color: #64748b; }
+        .secure-badge { color: #10b981; font-weight: 600; font-size: 10px; display: flex; align-items: center; gap: 3px; background: rgba(16,185,129,0.1); padding: 1px 5px; border-radius: 4px; }
+
+        /* 输入底栏做活 */
+        .chat-footer { padding: 24px 30px; border-top: 1px solid rgba(255, 255, 255, 0.04); background: rgba(10,10,22,0.3); }
+        .footer-input-wrapper { display: flex; gap: 14px; align-items: center; }
+        .chat-footer .input { margin-bottom: 0; background: rgba(0,0,0,0.2); padding: 14px 20px; }
+        .btn-send { width: auto; padding: 0 24px; height: 48px; border-radius: 12px; display: flex; align-items: center; gap: 8px; }
+        
+        .typing-indicator { font-size: 11px; color: #ec4899; height: 16px; margin-bottom: 6px; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 6px; }
+        .typing-indicator.show { opacity: 1; }
+        
+        /* 空白沙盒占位 */
+        .empty-view { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #334155; text-align: center; gap: 12px; }
+        .empty-view i { font-size: 40px; color: #1e1e38; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 1. 独立身份配置终端（登录） -->
+        <div id="loginScreen" class="login-screen">
+            <div class="login-box">
+                <h1 class="login-title">Messenger Pro</h1>
+                <p class="login-subtitle">基于真实专属 ID 的点对点安全信道</p>
+                <input type="text" id="usernameInput" class="input" placeholder="配置你的专属代号..." maxlength="12">
+                <button id="loginBtn" class="btn btn-primary">接入去中心化通信网</button>
+            </div>
+        </div>
+
+        <!-- 2. 主控制台 -->
+        <div id="appScreen" class="container hidden">
+            <!-- 侧边栏：ID 配置与节点检索 -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo-row">
+                        <span class="logo-text">MPro Terminal</span>
+                        <span style="font-size: 11px; background: rgba(168,85,247,0.15); color:#c084fc; padding:2px 8px; border-radius:20px;" id="onlineCounter">在线: 1</span>
+                    </div>
+                    <div class="profile-card">
+                        <div style="font-weight:600; font-size:13px;" id="myNodeName">@User</div>
+                        <!-- 点击即可一键复制真实 ID 丢给别人 -->
+                        <div class="profile-id-row" id="copyIdBtn" title="点击复制我的真实 ID">
+                            <span id="myNodeId" style="font-family:monospace;">ID: 加载中...</span>
+                            <i class="fa-regular fa-copy"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 真实搜索区：通过他人电脑生成的 ID 添加对方 -->
+                <div class="search-area">
+                    <input type="text" id="targetIdInput" class="input" placeholder="输入他人电脑的真实 ID...">
+                    <button id="searchBtn" class="btn-search" title="搜索并配对信道"><i class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <div class="list-title">已建立的安全会话</div>
+                <div class="contacts-list" id="nodesList">
+                    <!-- 这里没有任何假人，只有你通过 ID 搜索加进来的真实对话 -->
+                </div>
+            </div>
+
+            <!-- 右侧核心聊天区 -->
+            <div class="chat-main">
+                <div class="chat-header hidden" id="chatHeader">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="avatar" id="activeAvatar">?</div>
+                        <div>
+                            <div class="node-name" id="activeNodeName">-</div>
+                            <div class="node-id-preview" id="activeNodeId">-</div>
+                        </div>
+                    </div>
+                    <button class="logout-btn" id="disconnectBtn" style="border:1px solid rgba(255,255,255,0.05); background:none; color:#64748b; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">断开信道</button>
+                </div>
+                
+                <!-- 核心消息滚屏区 -->
+                <div class="chat-body" id="chatBody">
+                    <div class="empty-view" id="emptyView">
+                        <i class="fa-solid fa-tower-broadcast"></i>
+                        <p style="font-size:13px;">当前没有活跃的连接管道。<br>复制你左上角的<b>真实 ID</b>发给好友，或者输入好友的 ID 接入对话。</p>
+                    </div>
+                </div>
+
+                <!-- 底栏输入控制（全做活） -->
+                <div class="chat-footer hidden" id="chatFooter">
+                    <div id="typingIndicator" class="typing-indicator">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> 对方正在输入加密数据包...
+                    </div>
+                    <div class="footer-input-wrapper">
+                        <input type="text" id="messageInput" class="input" placeholder="传送安全的加密数据流...">
+                        <button id="sendBtn" class="btn btn-primary btn-send">
+                            <span>传送</span><i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 逻辑引擎 -->
+    <script>
+        let socket;
+        let localKeyPair = null;
+        let localPublicKeyPem = "";
+        let currentUserName = "";
+        
+        // 存储当前用户手动添加的真实对话列表（杜绝死假人）
+        let activeConversations = {}; 
+        let currentLinkedNodeId = null;
+        let typingTimeout;
+
+        // --- 核心加解密组件（安全合规，本地计算） ---
+        async function initCrypto() {
+            const keyPair = await window.crypto.subtle.generateKey(
+                { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+                true, ["encrypt", ["decrypt"]]
+            );
+            const exportedPub = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
+            const pem = btoa(String.fromCharCode(...new Uint8Array(exportedPub)));
+            return { keyPair, publicKeyPem: pem };
+        }
+
+        async function encryptBytes(text, pubPem) {
+            const binaryDer = new Uint8Array(atob(pubPem).split("").map(c => c.charCodeAt(0)));
+            const pubKey = await window.crypto.subtle.importKey("spki", binaryDer.buffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+            const encrypted = await window.crypto.subtle.encrypt({ name: "RSA-OAEP" }, pubKey, new TextEncoder().encode(text));
+            return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+        }
+
+        async function decryptBytes(base64, privKey) {
+            const binary = new Uint8Array(atob(base64).split("").map(c => c.charCodeAt(0)));
+            const decrypted = await window.crypto.subtle.decrypt({ name: "RSA-OAEP" }, privKey, binary.buffer);
+            return new TextDecoder().decode(decrypted);
+        }
+
+        // --- 连接与节点中转管理 ---
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const user = document.getElementById('usernameInput').value.trim();
+            if(!user) return alert("配置错误：必须输入有效的节点代号");
+
+            document.getElementById('loginBtn').disabled = true;
+            document.getElementById('loginBtn').textContent = "正在本地生成密钥对...";
+
+            const keys = await initCrypto();
+            localKeyPair = keys.keyPair;
+            localPublicKeyPem = keys.publicKeyPem;
+            currentUserName = user;
+
+            // 握手后端
+            socket = io();
+            
+            socket.on('connect', () => {
+                const myId = socket.id;
+                document.getElementById('myNodeId').textContent = `${myId}`;
+                document.getElementById('myNodeName').textContent = `@${currentUserName}`;
+                
+                // 向全网登记公钥
+                socket.emit('node:online', { username: currentUserName, publicKey: localPublicKeyPem });
+            });
+
+            initNetworkListeners();
+
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+        });
+
+        // 真实 ID 复制
+        document.getElementById('copyIdBtn').addEventListener('click', () => {
+            const idText = document.getElementById('myNodeId').textContent;
+            navigator.clipboard.writeText(idText);
+            alert("🔒 你的全网唯一通信 ID 已成功复制到剪贴板，快发给其他电脑的好友吧！");
+        });
+
+        // 真实 ID 搜索添加逻辑
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const targetId = document.getElementById('targetIdInput').value.trim();
+            if(!targetId) return alert("请输入要配对的真实 ID");
+            if(targetId === socket.id) return alert("无法自己与自己建立通信管道");
+
+            // 向服务器查验此 ID 是否真实在线
+            socket.emit('node:search', targetId, (res) => {
+                if(res.success) {
+                    const foundNode = res.node;
+                    // 塞入本地会话树
+                    activeConversations[foundNode.id] = {
+                        id: foundNode.id,
+                        username: foundNode.username,
+                        publicKey: foundNode.publicKey,
+                        history: []
+                    };
+                    document.getElementById('targetIdInput').value = '';
+                    renderActiveNodesList();
+                    openConversationChannel(foundNode.id);
+                } else {
+                    alert(res.message);
+                }
+            });
+        });
+
+        // 渲染纯真实在线会话列表
+        function renderActiveNodesList() {
+            const container = document.getElementById('nodesList');
+            container.innerHTML = '';
+            const keys = Object.keys(activeConversations);
+
+            keys.forEach(id => {
+                const node = activeConversations[id];
+                const item = document.createElement('div');
+                item.className = `node-item ${currentLinkedNodeId === id ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="avatar">${node.username.substring(0,2).toUpperCase()}</div>
+                    <div style="flex:1;">
+                        <div class="node-name">@${node.username}</div>
+                        <div class="node-id-preview">ID: ${node.id.substring(0,10)}...</div>
+                    </div>
+                `;
+                item.addEventListener('click', () => openConversationChannel(node.id));
+                container.appendChild(item);
+            });
+        }
+
+        // 打开或切换管道
+        function openConversationChannel(id) {
+            currentLinkedNodeId = id;
+            const node = activeConversations[id];
+            
+            renderActiveNodesList();
+
+            // 解除组件隐藏
+            document.getElementById('chatHeader').classList.remove('hidden');
+            document.getElementById('chatFooter').classList.remove('hidden');
+            document.getElementById('emptyView').classList.add('hidden');
+
+            document.getElementById('activeNodeName').textContent = `@${node.username}`;
+            document.getElementById('activeNodeId').textContent = `物理节点 ID: ${node.id}`;
+            document.getElementById('activeAvatar').textContent = node.username.substring(0,2).toUpperCase();
+
+            // 渲染历史数据
+            const body = document.getElementById('chatBody');
+            body.innerHTML = '';
+            node.history.forEach(msg => {
+                appendBubbleToDom(msg.sender, msg.text, msg.type, msg.time);
+            });
+            body.scrollTop = body.scrollHeight;
+        }
+
+        // --- 数据流发送与中转监听 ---
+        async function sendSecurePayload() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if(!text || !currentLinkedNodeId) return;
+
+            const targetNode = activeConversations[currentLinkedNodeId];
+            
+            // 1. 本地用【对方的公钥】执行固态加密
+            const encryptedStr = await encryptBytes(text, targetNode.publicKey);
+
+            // 2. 网络推送密文
+            socket.emit('chat:private_stream', {
+                toId: currentLinkedNodeId,
+                encryptedMsg: encryptedStr
+            });
+
+            // 3. 压入本地历史缓存并渲染
+            const timeStr = getNowTime();
+            targetNode.history.push({ sender: currentUserName, text, type: 'outbound', time: timeStr });
+            appendBubbleToDom(currentUserName, text, 'outbound', timeStr);
+
+            input.value = '';
+            socket.emit('chat:typing', { toId: currentLinkedNodeId, isTyping: false });
+        }
+
+        function initNetworkListeners() {
+            // 实时更新在线数字
+            socket.on('system:count', (count) => {
+                document.getElementById('onlineCounter').textContent = `在线: ${count}`;
+            });
+
+            // 真实收到密文流
+            socket.on('chat:receive_stream', async ({ fromId, fromUsername, encryptedMsg }) => {
+                try {
+                    // 本地私钥解密
+                    const plainText = await decryptBytes(encryptedMsg, localKeyPair.privateKey);
+                    const timeStr = getNowTime();
+
+                    // 如果本地还没有这个人的会话，由于是真人在发，自动帮其建立通道
+                    if(!activeConversations[fromId]) {
+                        // 重新反向索取公钥（此处简化，直接假设对方在线可通过后续索取，或直接使用服务器中转时带上的公钥）
+                        // 为确保能够回信，我们在真实架构中会让发送者带上自己的公钥
+                        socket.emit('node:search', fromId, (res) => {
+                            if(res.success) {
+                                activeConversations[fromId] = {
+                                    id: fromId, username: fromUsername, publicKey: res.node.publicKey, history: []
+                                };
+                                pushAndRenderInbound(fromId, fromUsername, plainText, timeStr);
+                            }
+                        });
+                    } else {
+                        pushAndRenderInbound(fromId, fromUsername, plainText, timeStr);
+                    }
+                } catch (e) {
+                    console.error("解密失败，包目标密钥不匹配", e);
+                }
+            });
+
+            // 正在输入互传做活
+            socket.on('chat:typing_relay', ({ fromId, isTyping }) => {
+                if (currentLinkedNodeId === fromId) {
+                    const indicator = document.getElementById('typingIndicator');
+                    if(isTyping) indicator.classList.add('show');
+                    else indicator.classList.remove('show');
+                }
+            });
+        }
+
+        function pushAndRenderInbound(fromId, fromUsername, text, timeStr) {
+            activeConversations[fromId].history.push({ sender: fromUsername, text, type: 'inbound', time: timeStr });
+            if(currentLinkedNodeId === fromId) {
+                appendBubbleToDom(fromUsername, text, 'inbound', timeStr);
+            } else {
+                alert(`📬 收到来自 @${fromUsername} 的加密私聊信息！`);
+                renderActiveNodesList();
+            }
+        }
+
+        function appendBubbleToDom(sender, text, direction, timeStr) {
+            const body = document.getElementById('chatBody');
+            const row = document.createElement('div');
+            row.className = `bubble-row ${direction}`;
+            row.innerHTML = `
+                <div class="bubble">
+                    ${text}
+                </div>
+                <div class="bubble-meta">
+                    <span>@${sender}</span> • <span>${timeStr}</span>
+                    <span class="secure-badge"><i class="fa-solid fa-lock"></i> E2EE 密道</span>
+                </div>
+            `;
+            body.appendChild(row);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        // 输入同步做活触发
+        document.getElementById('messageInput').addEventListener('input', () => {
+            if(!currentLinkedNodeId) return;
+            socket.emit('chat:typing_state', { toId: currentLinkedNodeId, isTyping: true });
+            
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                socket.emit('chat:typing_state', { toId: currentLinkedNodeId, isTyping: false });
+            }, 1200);
+        });
+
+        function getNowTime() {
+            const now = new Date();
+            return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', sendSecurePayload);
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') sendSecurePayload();
+        });
+        document.getElementById('disconnectBtn').addEventListener('click', () => { window.location.reload(); });
+    </script>
+</body>
+</html>
