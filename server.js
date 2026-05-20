@@ -4,57 +4,67 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+// 限制传输大小为 50mb 保证高清图片端到端加密大流顺畅
+const io = new Server(server, { 
+    cors: { origin: "*" },
+    maxHttpBufferSize: 5e7
+});
 
-// 托管静态前端
 app.use(express.static(__dirname));
 
-// 存储全网在线的真实节点数据
 const activeNodes = {};
 
 io.on('connection', (socket) => {
-    // 1. 节点上线：为其登记其真实 ID 和加密公钥
+    console.log(`📡 设备接入核心: ${socket.id}`);
+
+    // 节点登记上线
     socket.on('node:online', ({ username, publicKey }) => {
-        activeNodes[socket.id] = {
-            id: socket.id, // 这就是用户的真实全网唯一通讯 ID
-            username: username,
-            publicKey: publicKey
-        };
-        console.log(`🌐 节点上线: [${username}] ID: ${socket.id}`);
-        // 广播更新全网在线人数，但不强行插入假人
+        activeNodes[socket.id] = { id: socket.id, username, publicKey };
         io.emit('system:count', Object.keys(activeNodes).length);
+        console.log(`🌐 节点激活: [${username}] ID: ${socket.id}`);
     });
 
-    // 2. 真实 ID 搜索机制：允许用户输入 ID 查找目标
+    // 搜索真实存在的节点
     socket.on('node:search', (targetId, callback) => {
-        const targetNode = activeNodes[targetId];
-        if (targetNode) {
-            callback({ success: true, node: { id: targetNode.id, username: targetNode.username, publicKey: targetNode.publicKey } });
+        const node = activeNodes[targetId];
+        if (node) {
+            callback({ success: true, node: { id: node.id, username: node.username, publicKey: node.publicKey } });
         } else {
-            callback({ success: false, message: "未找到该节点 ID，请检查是否输入正确或对方已下线" });
+            callback({ success: false, message: "⚠️ 未找到该节点特征码，对方可能未接入网络或已下线" });
         }
     });
 
-    // 3. 点对点私密流转发
-    socket.on('chat:private_stream', ({ toId, encryptedMsg }) => {
+    // 端到端私密流转发（支持文字、富文本与图片乱码大流）
+    socket.on('chat:private_stream', ({ toId, msgId, encryptedMsg, msgType }) => {
         if (activeNodes[toId] && io.sockets.sockets.get(toId)) {
             io.to(toId).emit('chat:receive_stream', {
                 fromId: socket.id,
                 fromUsername: activeNodes[socket.id].username,
-                encryptedMsg: encryptedMsg
+                msgId,
+                encryptedMsg,
+                msgType
             });
         }
     });
 
-    // 4. 输入状态实时互传
+    // 状态流：正在输入状态同步
     socket.on('chat:typing_state', ({ toId, isTyping }) => {
         io.to(toId).emit('chat:typing_relay', { fromId: socket.id, isTyping });
     });
 
-    // 5. 离线清理
+    // 状态流：消息已读状态回执中转
+    socket.on('chat:read_receipt', ({ toId, msgId }) => {
+        io.to(toId).emit('chat:read_receipt_relay', { fromId: socket.id, msgId });
+    });
+
+    // 状态流：安全撤回特定消息
+    socket.on('chat:recall_req', ({ toId, msgId }) => {
+        io.to(toId).emit('chat:recall_relay', { fromId: socket.id, msgId });
+    });
+
     socket.on('disconnect', () => {
         if (activeNodes[socket.id]) {
-            console.log(`❌ 节点下线: ID: ${socket.id}`);
+            console.log(`❌ 节点断开: ID: ${socket.id}`);
             delete activeNodes[socket.id];
             io.emit('system:count', Object.keys(activeNodes).length);
         }
@@ -63,5 +73,7 @@ io.on('connection', (socket) => {
 
 const PORT = 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 赛博加密通讯核心已跑在: http://localhost:${PORT}`);
+    console.log(`============ MESSENGER PRO CYBER CORE RUNNING ============`);
+    console.log(`🚀 专属高安全通信控制台已就绪: http://localhost:${PORT}`);
+    console.log(`==========================================================`);
 });
