@@ -3,298 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messenger Pro - Ultimate E2EE Quantum Node</title>
+    <title>Messenger Pro - Ultimate Secure Platform</title>
     
-    <!-- 引入高精外部矢量资源与字体 -->
     <link rel="preconnect" href="https://googleapis.com">
     <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cloudflare.com">
-    
-    <!-- 引入 Socket.io 核心分发依赖 -->
     <script src="/socket.io/socket.io.js"></script>
 
     <style>
-        /* ==================== 1. 主题变量矩阵 (全部激活) ==================== */
         :root {
-            --bg-glow: radial-gradient(circle at 50% 50%, #12122c 0%, #080816 100%);
-            --panel-bg: rgba(10, 10, 22, 0.75);
-            --primary-gradient: linear-gradient(135deg, #8b5cf6, #d946ef);
-            --accent-neon: #a855f7;
-            --text-main: #f8fafc;
-            --text-muted: #64748b;
-            --bubble-outbound: linear-gradient(135deg, #6366f1, #8b5cf6);
-            --border-glow: rgba(168, 85, 247, 0.4);
+            --bg-main: radial-gradient(circle at 50% 50%, #111126 0%, #070714 100%);
+            --sidebar-bg: rgba(9, 9, 20, 0.8);
+            --card-bg: rgba(255, 255, 255, 0.02);
+            --border-color: rgba(255, 255, 255, 0.05);
+            --accent-gradient: linear-gradient(135deg, #a855f7, #f43f5e);
+            --bubble-out: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --bubble-in: rgba(255, 255, 255, 0.03);
+            --text-color: #e2e8f0;
         }
 
-        /* 幻彩极光主题 */
-        [data-theme="aurora"] {
-            --bg-glow: radial-gradient(circle at 50% 50%, #022c22 0%, #020617 100%);
-            --panel-bg: rgba(15, 23, 42, 0.8);
-            --primary-gradient: linear-gradient(135deg, #0d9488, #10b981);
-            --accent-neon: #14b8a6;
-            --bubble-outbound: linear-gradient(135deg, #0f766e, #115e59);
-            --border-glow: rgba(20, 184, 166, 0.4);
+        .light-theme {
+            --bg-main: #f1f5f9;
+            --sidebar-bg: rgba(255, 255, 255, 0.9);
+            --card-bg: #ffffff;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --accent-gradient: linear-gradient(135deg, #6366f1, #4f46e5);
+            --bubble-out: linear-gradient(135deg, #4f46e5, #6366f1);
+            --bubble-in: #ffffff;
+            --text-color: #1e293b;
         }
 
-        /* 量子辐射主题 */
-        [data-theme="amber"] {
-            --bg-glow: radial-gradient(circle at 50% 50%, #2e1065 0%, #090514 100%);
-            --panel-bg: rgba(20, 10, 30, 0.85);
-            --primary-gradient: linear-gradient(135deg, #f59e0b, #e11d48);
-            --accent-neon: #f59e0b;
-            --bubble-outbound: linear-gradient(135deg, #be123c, #9f1239);
-            --border-glow: rgba(245, 158, 11, 0.4);
+        .cyber-theme {
+            --bg-main: #000000;
+            --sidebar-bg: rgba(0, 20, 10, 0.85);
+            --card-bg: rgba(0, 255, 127, 0.03);
+            --border-color: rgba(0, 255, 127, 0.2);
+            --accent-gradient: linear-gradient(135deg, #00ff7f, #00ffff);
+            --bubble-out: linear-gradient(135deg, #00aa50, #00ff7f);
+            --bubble-in: rgba(0, 40, 20, 0.3);
+            --text-color: #39ff14;
         }
 
-        /* 深海潜行主题 */
-        [data-theme="abyss"] {
-            --bg-glow: radial-gradient(circle at 50% 50%, #0c4a6e 0%, #030712 100%);
-            --panel-bg: rgba(3, 7, 18, 0.8);
-            --primary-gradient: linear-gradient(135deg, #0284c7, #3b82f6);
-            --accent-neon: #38bdf8;
-            --bubble-outbound: linear-gradient(135deg, #1d4ed8, #1e40af);
-            --border-glow: rgba(56, 189, 248, 0.4);
-        }
-
-        /* ==================== 2. 全局通用重置与粒子网格布局 ==================== */
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-glow); color: var(--text-main); font-size: 14px;
-            overflow: hidden; height: 100vh; width: 100vw; transition: background 0.5s ease;
-        }
-
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg-main); color: var(--text-color); font-size: 14px; overflow: hidden; height: 100vh; transition: background 0.3s; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-neon); }
+        ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(244, 63, 94, 0.4); }
 
-        .container { display: flex; height: 100vh; width: 100vw; position: relative; }
+        .container { display: flex; height: 100vh; width: 100vw; }
         .hidden { display: none !important; }
 
-        /* ==================== 3. 登录认证控制台（全做活） ==================== */
-        .login-screen {
-            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: absolute; z-index: 999;
-            background: url('data:image/svg+xml,<svg xmlns="http://w3.org" width="60" height="60" viewBox="0 0 60 60"><rect width="60" height="60" fill="none"/><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1"/></svg>');
-        }
+        /* ================= 登录配置中心 ================= */
+        .login-screen { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
         .login-box {
-            background: rgba(10, 10, 25, 0.8); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px; padding: 50px; width: 440px;
-            box-shadow: 0 40px 90px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255,255,255,0.15);
-            text-align: center; animation: scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background: rgba(12, 12, 28, 0.7); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 28px; padding: 50px; width: 420px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.1); text-align: center;
+            animation: appScaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes scaleUp { from { transform: scale(0.93); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .login-title {
-            font-size: 34px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px;
-            background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .login-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 40px; }
+        @keyframes appScaleUp { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .login-title { font-size: 34px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .login-subtitle { font-size: 13px; color: #64748b; margin-bottom: 40px; }
 
-        .input {
-            width: 100%; padding: 15px 20px; background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; color: #fff;
-            font-family: inherit; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 14px;
-        }
-        .input:focus { outline: none; border-color: var(--accent-neon); background: rgba(255, 255, 255, 0.06); box-shadow: 0 0 25px rgba(168, 85, 247, 0.2); }
+        .input { width: 100%; padding: 15px 20px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 14px; color: #fff; font-family: inherit; transition: all 0.3s; font-size: 14px; margin-bottom: 16px; }
+        .input:focus { outline: none; border-color: #a855f7; background: rgba(168, 85, 247, 0.04); box-shadow: 0 0 25px rgba(168, 85, 247, 0.2); }
         
-        .btn { padding: 15px 20px; border: none; border-radius: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
-        .btn-primary { background: var(--primary-gradient); color: white; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3); width: 100%; text-transform: uppercase; letter-spacing: 0.5px; }
-        .btn-primary:hover { transform: translateY(-1.5px); box-shadow: 0 15px 35px rgba(139, 92, 246, 0.45); }
-        .btn-primary:disabled { background: #1e1e2f; color: #475569; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn { padding: 15px 20px; border: none; border-radius: 14px; font-weight: 600; cursor: pointer; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); font-size: 14px; width: 100%; }
+        .btn-primary { background: var(--accent-gradient); color: white; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 15px 35px rgba(139, 92, 246, 0.45); }
 
-        /* ==================== 4. 侧边栏：多维度控枢面板 ==================== */
-        .sidebar {
-            width: 380px; background: var(--panel-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; position: relative; z-index: 10;
-        }
-        .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
-        .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo-text { font-size: 22px; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* ================= 核心工作区面板 ================= */
+        .sidebar { width: 360px; background: var(--sidebar-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 26px; border-bottom: 1px solid var(--border-color); }
+        .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .logo-text { font-size: 22px; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .profile-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 16px; margin-top: 10px; position: relative; }
-        .profile-id-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 10px; cursor: pointer; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.02); }
-        .profile-id-row:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: var(--accent-neon); }
+        .profile-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; }
+        .profile-id-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 8px; cursor: pointer; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; }
+        .profile-id-row:hover { background: rgba(255,255,255,0.05); color: #fff; }
 
-        /* 搜索加人混合路由区 */
-        .search-area { padding: 16px 24px; display: flex; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); background: rgba(0,0,0,0.05); }
-        .search-area .input { padding: 12px 16px; border-radius: 12px; font-size: 13px; }
-        .btn-search { width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,0.03); color: #fff; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
-        .btn-search:hover { background: rgba(255,255,255,0.08); border-color: var(--accent-neon); color: var(--accent-neon); transform: scale(1.03); }
+        .search-area { padding: 16px 26px; display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); }
+        .search-area .input { margin-bottom: 0; padding: 12px 16px; border-radius: 12px; }
+        .btn-search { width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,0.03); color: #fff; border: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .btn-search:hover { background: rgba(168,85,247,0.1); border-color: #a855f7; }
 
-        .list-title-row { padding: 20px 24px 8px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .list-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; }
-        .local-search-input { background: transparent; border: none; font-size: 11px; color: var(--accent-neon); text-align: right; width: 120px; outline: none; }
-        .local-search-input::placeholder { color: #334155; }
-
-        .contacts-list { flex: 1; overflow-y: auto; padding: 0 16px 16px 16px; }
+        .list-title { padding: 20px 26px 10px 26px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 1.5px; }
+        .contacts-list { flex: 1; overflow-y: auto; padding: 0 14px 14px 14px; }
         
-        /* 真实会话项样式 */
-        .node-item { padding: 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-radius: 16px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(255,255,255,0.01); border: 1px solid transparent; animation: itemIn 0.3s ease; }
-        .node-item:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.05); transform: translateY(-1px); }
-        .node-item.active { background: rgba(139, 92, 246, 0.12); border-color: rgba(168, 85, 247, 0.35); box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.05); }
-        @keyframes itemIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .node-item { padding: 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-radius: 16px; background: rgba(255,255,255,0.01); border: 1px solid transparent; transition: all 0.2s; }
+        .node-item:hover { background: rgba(255,255,255,0.02); border-color: rgba(168,85,247,0.15); }
+        .node-item.active { background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3); }
         
-        .avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; background: var(--primary-gradient); font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
-        .node-name-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .node-name { font-weight: 600; font-size: 14px; color: #f1f5f9; }
-        .node-id-preview { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: 'Fira Code', monospace; }
-        .badge-unread { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #ef4444; }
+        .avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; background: linear-gradient(135deg, #6366f1, #a855f7); font-size: 14px; }
+        .node-name { font-weight: 600; font-size: 14px; }
+        .node-meta-p { font-size: 11px; color: #64748b; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
 
-        /* ==================== 5. 右侧核心聊天舞台与矩阵换肤顶栏 ==================== */
-        .chat-main { flex: 1; display: flex; flex-direction: column; background: rgba(5, 5, 12, 0.2); position: relative; z-index: 5; }
-        .chat-header { padding: 22px 35px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); display: flex; align-items: center; justify-content: space-between; background: rgba(10,10,22,0.15); backdrop-filter: blur(10px); }
-        
-        /* 矩阵换肤舱样式 */
-        .theme-hub { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); }
-        .theme-dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.2); }
-        .theme-dot:hover { transform: scale(1.3); }
-        .td-cyber { background: #8b5cf6; }
-        .td-aurora { background: #10b981; }
-        .td-amber { background: #f59e0b; }
-        .td-abyss { background: #3b82f6; }
+        /* ================= 右侧多媒体聊天舞台 ================= */
+        .chat-main { flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.1); position: relative; }
+        .chat-header { padding: 22px 34px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(10,10,22,0.1); }
+        .header-actions { display: flex; gap: 14px; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .icon-btn:hover { color: #fff; background: rgba(255,255,255,0.06); border-color: #a855f7; }
+        .icon-btn.active-call { background: #ef4444; color: white; border-color: #ef4444; animation: pulseCall 1.5s infinite; }
+        @keyframes pulseCall { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        .chat-body { flex: 1; padding: 35px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .chat-body { flex: 1; padding: 34px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
         
-        /* ==================== 6. 高阶端到端渲染多媒体气泡矩阵 ==================== */
+        /* 高级富媒体对话气泡 */
         .bubble-row { display: flex; flex-direction: column; max-width: 65%; width: fit-content; animation: bubbleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
         .bubble-row.outbound { align-self: flex-end; align-items: flex-end; }
         .bubble-row.inbound { align-self: flex-start; align-items: flex-start; }
-        @keyframes bubbleIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes bubbleIn { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .bubble { padding: 14px 20px; border-radius: 20px; line-height: 1.6; font-size: 14px; word-break: break-all; user-select: text; }
-        .inbound .bubble { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; border-top-left-radius: 4px; }
-        .outbound .bubble { background: var(--bubble-outbound); color: white; border-top-right-radius: 4px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
+        .bubble { padding: 14px 20px; border-radius: 20px; line-height: 1.5; font-size: 14px; word-break: break-all; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .inbound .bubble { background: var(--bubble-in); border: 1px solid var(--border-color); border-top-left-radius: 4px; }
+        .outbound .bubble { background: var(--bubble-out); color: white; border-top-right-radius: 4px; }
         
-        /* 图片加密传输节点渲染 */
-        .bubble-img { max-width: 280px; max-height: 200px; border-radius: 12px; margin-top: 4px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; cursor: zoom-in; }
+        /* 富媒体图片与文件渲染 */
+        .bubble-img { max-width: 280px; max-height: 200px; border-radius: 12px; margin-top: 4px; cursor: zoom-in; object-fit: cover; display: block; border: 1px solid rgba(255,255,255,0.05); }
+        .file-attachment { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 12px; margin-top: 4px; text-decoration: none; color: inherit; border: 1px solid rgba(255,255,255,0.05); }
 
         .bubble-meta { font-size: 11px; color: #475569; margin-top: 6px; display: flex; gap: 8px; align-items: center; }
         .outbound .bubble-meta { color: #64748b; }
-        .secure-badge { color: #10b981; font-weight: 600; font-size: 10px; display: flex; align-items: center; gap: 3px; background: rgba(16,185,129,0.08); padding: 2px 6px; border-radius: 5px; border: 1px solid rgba(16,185,129,0.15); }
-        .secure-badge.plain { color: #ff9800; background: rgba(255,152,0,0.08); border-color: rgba(255,152,0,0.15); }
+        .secure-badge { color: #10b981; font-weight: 600; font-size: 10px; display: flex; align-items: center; gap: 3px; background: rgba(16,185,129,0.08); padding: 2px 6px; border-radius: 5px; }
+        .status-receipt { font-size: 12px; color: #64748b; }
+        .status-receipt.read { color: #38bdf8; }
 
-        /* ==================== 7. 全活多功能输入中枢控制台 ==================== */
-        .chat-footer { padding: 24px 35px; border-top: 1px solid rgba(255, 255, 255, 0.04); background: rgba(10,10,22,0.25); backdrop-filter: blur(10px); }
-        .footer-tools { display: flex; gap: 14px; margin-bottom: 12px; align-items: center; color: var(--text-muted); font-size: 15px; }
-        .tool-icon { cursor: pointer; transition: color 0.2s; }
-        .tool-icon:hover { color: var(--accent-neon); }
+        /* 输入底栏升级 */
+        .chat-footer { padding: 24px 34px; border-top: 1px solid var(--border-color); background: rgba(10,10,22,0.2); }
+        .footer-input-wrapper { display: flex; gap: 14px; align-items: center; }
+        .chat-footer .input { margin-bottom: 0; background: rgba(0,0,0,0.2); padding: 15px 22px; border-radius: 14px; }
+        .btn-send { width: auto; padding: 0 26px; height: 50px; border-radius: 14px; display: flex; align-items: center; gap: 8px; }
         
-        .footer-input-wrapper { display: flex; gap: 14px; align-items: center; position: relative; }
-        .chat-footer .input { margin-bottom: 0; background: rgba(0,0,0,0.3); padding: 15px 22px; padding-right: 80px; }
-        .input-counter { position: absolute; right: 155px; font-size: 11px; color: #334155; font-family: 'Fira Code', monospace; }
-        .btn-send { width: auto; padding: 0 28px; height: 50px; border-radius: 14px; display: flex; align-items: center; gap: 8px; }
-        
-        .typing-indicator { font-size: 11px; color: #ec4899; height: 18px; margin-bottom: 6px; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 6px; font-style: italic; }
+        .typing-indicator { font-size: 11px; color: #ec4899; height: 18px; margin-bottom: 6px; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 6px; }
         .typing-indicator.show { opacity: 1; }
         
-        /* 独立空盒沙箱 */
-        .empty-view { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #334155; text-align: center; gap: 15px; }
-        .empty-view i { font-size: 48px; color: rgba(255,255,255,0.02); text-shadow: 0 0 20px rgba(168,85,247,0.05); }
+        /* 呼叫浮层弹窗 */
+        .call-modal { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); background: #1e1b4b; border: 1px solid #4338ca; padding: 16px 24px; border-radius: 16px; display: flex; align-items: center; gap: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 1000; animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        /* 放大灯箱 */
+        .lightbox { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999; display:flex; align-items:center; justify-content:center; cursor:zoom-out; }
+        .lightbox img { max-width:90%; max-height:90%; border-radius:8px; box-shadow:0 0 4px rgba(255,255,255,0.1); }
+
+        .empty-view { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #334155; text-align: center; gap: 14px; }
+        .empty-view i { font-size: 48px; color: rgba(255,255,255,0.02); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- ==================== 登录端点配置视窗 ==================== -->
+        <!-- 1. 登录配置中心 -->
         <div id="loginScreen" class="login-screen">
             <div class="login-box">
                 <h1 class="login-title">Messenger Pro</h1>
-                <p class="login-subtitle">Quantum Encryption & Multi-media Communications</p>
-                <input type="text" id="usernameInput" class="input" placeholder="配置你的全网通信代号..." maxlength="12">
-                <button id="loginBtn" class="btn btn-primary" style="margin-top: 15px;">注入硬件节点通信网</button>
+                <p class="login-subtitle">量子多媒体安全信道集成终端</p>
+                <input type="text" id="usernameInput" class="input" placeholder="配置您的全局数字签名别名..." maxlength="12">
+                <button id="loginBtn" class="btn btn-primary">挂载核心安全套件</button>
             </div>
         </div>
 
-        <!-- ==================== 主应用控制中心 ==================== -->
+        <!-- 2. 主工作台控制中心 -->
         <div id="appScreen" class="container hidden">
-            <!-- 侧边栏：ID检索、会话持久化列表 -->
+            <!-- 左侧控制面板 -->
             <div class="sidebar">
                 <div class="sidebar-header">
                     <div class="logo-row">
-                        <span class="logo-text">MPro Server</span>
-                        <span style="font-size: 11px; background: rgba(168,85,247,0.15); color:var(--accent-neon); padding:2px 10px; border-radius:20px; font-weight: 600;" id="onlineCounter">Nodes: 1</span>
+                        <span class="logo-text">MPro Node</span>
+                        <span style="font-size: 11px; background: rgba(168,85,247,0.15); color:#c084fc; padding:2px 8px; border-radius:20px;" id="onlineCounter">节点网络: 1</span>
                     </div>
                     <div class="profile-card">
-                        <div style="font-weight:700; font-size:14px; color: #fff;" id="myNodeName">@User</div>
-                        <div class="profile-id-row" id="copyIdBtn" title="一键安全复制硬件层ID串">
-                            <span id="myNodeId" style="font-family:'Fira Code', monospace; letter-spacing: -0.5px;">ID: FETCHING...</span>
+                        <div style="font-weight:600; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+                            <span id="myNodeName">@Identity</span>
+                            <div style="display:flex; gap:6px;">
+                                <i class="fa-solid fa-palette" style="cursor:pointer;" id="themeToggleBtn" title="切换视觉滤镜样式"></i>
+                            </div>
+                        </div>
+                        <div class="profile-id-row" id="copyIdBtn" title="一键对拷本地唯一链路识别码">
+                            <span id="myNodeId">ID: 正在派发特征码...</span>
                             <i class="fa-regular fa-copy"></i>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 全活检索中转系统：输入跨电脑ID瞬间建立信道 -->
                 <div class="search-area">
-                    <input type="text" id="targetIdInput" class="input" placeholder="输入对端电脑的真实通信 ID...">
-                    <button id="searchBtn" class="btn-search" title="深度检索并打通对向通道"><i class="fa-solid fa-folder-plus"></i></button>
+                    <input type="text" id="targetIdInput" class="input" placeholder="输入远程网络终点特质 ID...">
+                    <button id="searchBtn" class="btn-search" title="握手远端终点"><i class="fa-solid fa-plus"></i></button>
                 </div>
 
-                <!-- 本地数据库会话模糊过滤器 -->
-                <div class="list-title-row">
-                    <div class="list-title">固态持久化密室</div>
-                    <input type="text" id="localSearchInput" class="local-search-input" placeholder="🔍 检索本地已存会话...">
-                </div>
-                
-                <div class="contacts-list" id="nodesList">
-                    <!-- 此处杜绝一切死假人，纯净持久化动态会话栈 -->
-                </div>
+                <div class="list-title">活动链路管道</div>
+                <div class="contacts-list" id="nodesList"></div>
             </div>
 
-            <!-- 右侧核心多媒体对讲大厅 -->
+            <!-- 右侧核心工作舞台 -->
             <div class="chat-main">
+                <!-- 实时通话浮动挂件 -->
+                <div id="callModal" class="call-modal hidden">
+                    <span id="callStatusText" style="color:white; font-size:13px;">正在呼叫对方物理音频卡...</span>
+                    <div style="display:flex; gap:10px;">
+                        <button id="acceptCallBtn" class="btn hidden" style="background:#10b981; color:white; padding:6px 12px; border-radius:8px; width:auto; font-size:12px;">接听</button>
+                        <button id="hangupCallBtn" class="btn" style="background:#ef4444; color:white; padding:6px 12px; border-radius:8px; width:auto; font-size:12px;">挂断</button>
+                    </div>
+                </div>
+
                 <div class="chat-header hidden" id="chatHeader">
                     <div style="display:flex; align-items:center; gap:14px;">
                         <div class="avatar" id="activeAvatar">?</div>
                         <div>
                             <div class="node-name" id="activeNodeName">-</div>
-                            <div class="node-id-preview" id="activeNodeId">-</div>
+                            <div class="node-meta-p" id="activeNodeId">-</div>
                         </div>
                     </div>
-                    
-                    <!-- 矩阵变色层调控舱 (全部做活) -->
-                    <div style="display: flex; align-items: center; gap: 20px;">
-                        <div class="theme-hub">
-                            <div class="theme-dot td-cyber" onclick="switchTheme('cyber')" title="赛博霓虹"></div>
-                            <div class="theme-dot td-aurora" onclick="switchTheme('aurora')" title="幻彩极光"></div>
-                            <div class="theme-dot td-amber" onclick="switchTheme('amber')" title="量子辐射"></div>
-                            <div class="theme-dot td-abyss" onclick="switchTheme('abyss')" title="深海潜行"></div>
-                        </div>
-                        <button class="logout-btn" id="disconnectBtn" style="border:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.02); color:#64748b; padding:8px 14px; border-radius:10px; cursor:pointer; font-size:12px; transition: all 0.2s;">离线熔断</button>
+                    <div class="header-actions">
+                        <button class="icon-btn" id="voiceCallBtn" title="打通非对称加密音频语音流通道"><i class="fa-solid fa-phone"></i></button>
+                        <button class="icon-btn" id="disconnectBtn" title="安全擦除当前节点内存缓存并切断链路"><i class="fa-solid fa-power-off"></i></button>
                     </div>
                 </div>
                 
-                <!-- 核心多媒体混合滚屏区 -->
+                <!-- 核心滚动视窗 -->
                 <div class="chat-body" id="chatBody">
                     <div class="empty-view" id="emptyView">
                         <i class="fa-solid fa-shield-cat"></i>
-                        <p style="font-size:13px; line-height: 1.6; color: #475569;">
-                            当前局域网与广域网信道安全空闲。<br>
-                            点击左上角复制你的<b>真实物理ID</b>提供给伙伴，或者接入对方ID开辟数字隔离密室。
-                        </p>
+                        <p style="font-size:13px; color:#475569;">终端安全隔离挂载就绪。<br>请从左侧搜索添加对端物理识别码进入全功能高强度通道。</p>
                     </div>
                 </div>
 
-                <!-- 底部多功能工具箱与输入阵列 -->
+                <!-- 底端富媒体控制区 -->
                 <div class="chat-footer hidden" id="chatFooter">
                     <div id="typingIndicator" class="typing-indicator">
-                        <i class="fa-solid fa-circle-notch fa-spin"></i> 对方正在向信道内灌注加密数据流...
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> 远端正在封包多媒体切片...
                     </div>
-                    
-                    <div class="footer-tools">
-                        <!-- 隐藏的实体文件拾取器（100%全做活） -->
-                        <input type="file" id="mediaFileInput" accept="image/*" class="hidden">
-                        <i class="fa-regular fa-image tool-icon" id="toolImgBtn" title="原图无损非对称加密传输"></i>
-                        <i class="fa-regular fa-face-smile tool-icon" id="toolEmojiBtn" title="发送数字图腾表情"></i>
-                        <i class="fa-solid fa-vault tool-icon" title="安全等级: 核心硬件层级别" style="color: #10b981; margin-left: auto; font-size: 13px;"></i>
-                    </div>
-
                     <div class="footer-input-wrapper">
-                        <input type="text" id="messageInput" class="input" placeholder="向对端传送安全的强加密数据流..." maxlength="200">
-                        <span class="input-counter" id="inputCounter">0/200</span>
+                        <!-- 富媒体一键上传按键 -->
+                        <button class="icon-btn" id="attachBtn" style="height:50px; width:50px; border-radius:14px;" title="向管道推送二进制多媒体切片"><i class="fa-solid fa-paperclip"></i></button>
+                        <input type="file" id="fileSelector" class="hidden" accept="image/*,application/pdf,text/plain,zip">
+                        
+                        <input type="text" id="messageInput" class="input" placeholder="注入高密网络流载荷...">
                         <button id="sendBtn" class="btn btn-primary btn-send">
-                            <span>传送</span><i class="fa-solid fa-paper-plane"></i>
+                            <span>广播</span><i class="fa-solid fa-bolt"></i>
                         </button>
                     </div>
                 </div>
@@ -302,71 +250,169 @@
         </div>
     </div>
 
-    <!-- ==================== 8. 核心加解密与全活数据交互核心逻辑引擎 ==================== -->
+    <!-- 顶层全局光箱 -->
+    <div id="lightbox" class="lightbox hidden"></div>
+
     <script>
         let socket;
-        let localKeyPair = null;
-        let localPublicKeyPem = "";
+        let localKeyPair = null, localPublicKeyPem = "";
         let currentUserName = "";
-        let isCryptoSupported = true; 
-        
-        let activeConversations = {}; 
+        let isCryptoReady = true;
+
+        let activeConversations = {};
         let currentLinkedNodeId = null;
         let typingTimeout;
-        let db = null;
 
-        // --- A. INDEXEDDB 本地固态持久化存储层 (全活) ---
+        // WebRTC 语音矩阵变量
+        let localStream = null;
+        let peerConnection = null;
+        let isCallIncoming = false;
+        const rtcConfig = { iceServers: [{ urls: 'ice:://google.com' }] };
+
+        // 离线持久化本地数据库矩阵结构 (IndexedDB)
+        let db = null;
         function initIndexedDB() {
             return new Promise((resolve) => {
-                const request = window.indexedDB.open("MPro_Storage", 1);
+                const request = indexedDB.open("MPro_Storage_v2", 1);
                 request.onupgradeneeded = (e) => {
-                    const database = e.target.result;
-                    if (!database.objectStoreNames.contains("conversations")) {
-                        database.createObjectStore("conversations", { keyPath: "id" });
+                    let database = e.target.result;
+                    if(!database.objectStoreNames.contains("messages")) {
+                        database.createObjectStore("messages", { keyPath: "id", autoIncrement: true });
                     }
                 };
-                request.onsuccess = (e) => {
-                    db = e.target.result;
-                    loadLocalConversations().then(resolve);
-                };
-                request.onerror = () => {
-                    console.warn("IndexedDB 拒绝挂载，切换为纯运行内存缓存模式");
-                    resolve();
-                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(); };
+                request.onerror = () => { console.warn("DB无法挂载，转用全内存态"); resolve(); };
             });
         }
 
-        async function saveNodeToLocal(node) {
-            if (!db) return;
-            const tx = db.transaction("conversations", "readwrite");
-            const store = tx.objectStore("conversations");
-            store.put({ id: node.id, username: node.username, publicKey: node.publicKey, history: node.history });
+        function saveMsgToLocal(msgObj) {
+            if(!db) return;
+            const tx = db.transaction("messages", "readwrite");
+            tx.objectStore("messages").add(msgObj);
         }
 
-        function loadLocalConversations() {
+        function loadHistoryFromLocal(nodeId) {
             return new Promise((resolve) => {
-                if (!db) return resolve();
-                const tx = db.transaction("conversations", "readonly");
-                const store = tx.objectStore("conversations");
-                const req = store.getAll();
-                req.onsuccess = () => {
-                    req.result.forEach(item => {
-                        activeConversations[item.id] = item;
-                    });
-                    resolve();
+                if(!db) return resolve([]);
+                const tx = db.transaction("messages", "readonly");
+                const store = tx.objectStore("messages");
+                const list = [];
+                store.openCursor().onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if(cursor) {
+                        if(cursor.value.nodeLink === nodeId) list.push(cursor.value);
+                        cursor.continue();
+                    } else { resolve(list); }
                 };
-                req.onerror = () => resolve();
             });
         }
 
-        // --- B. WEB CRYPTO 非对称底层运算模块 (全活修复) ---
-        async function initCryptoEngine() {
+        // --- 算法模块，防死锁补丁版 ---
+        async function setupSubtleCrypto() {
             try {
-                if (!window.crypto || !window.crypto.subtle) throw new Error("缺少系统硬件安全环境");
+                if (!window.crypto || !window.crypto.subtle) throw new Error("缺少安全上下文");
                 const keyPair = await window.crypto.subtle.generateKey(
-                    { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([0x01, 0x00, 0x01]), hash: "SHA-256" },
+                    { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
                     true, ["encrypt", ["decrypt"]]
                 );
-                const exportedPub = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
-                const pem = btoa(String.fromCharCode(...new Uint8Array(exportedPub)));
-                
+                const pubBytes = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
+                return { keyPair, pem: btoa(String.fromCharCode(...new Uint8Array(pubBytes))) };
+            } catch(e) {
+                isCryptoReady = false;
+                return { keyPair: null, pem: "FALLBACK_STREAM_NODE" };
+            }
+        }
+
+        async function encryptFlow(text, pubPem) {
+            if(!isCryptoReady || pubPem === "FALLBACK_STREAM_NODE") return "RAW_FLOW:" + btoa(encodeURIComponent(text));
+            try {
+                const binary = new Uint8Array(atob(pubPem).split("").map(c => c.charCodeAt(0)));
+                const key = await window.crypto.subtle.importKey("spki", binary.buffer, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+                const enc = await window.crypto.subtle.encrypt({ name: "RSA-OAEP" }, key, new TextEncoder().encode(text));
+                return btoa(String.fromCharCode(...new Uint8Array(enc)));
+            } catch(e) { return "RAW_FLOW:" + btoa(encodeURIComponent(text)); }
+        }
+
+        async function decryptFlow(cipher, privKey) {
+            if(cipher.startsWith("RAW_FLOW:")) return decodeURIComponent(atob(cipher.replace("RAW_FLOW:", "")));
+            if(!isCryptoReady || !privKey) return cipher;
+            try {
+                const binary = new Uint8Array(atob(cipher).split("").map(c => c.charCodeAt(0)));
+                const dec = await window.crypto.subtle.decrypt({ name: "RSA-OAEP" }, privKey, binary.buffer);
+                return new TextDecoder().decode(dec);
+            } catch(e) { return "[多媒体切片解析异常或环境安全链断裂]"; }
+        }
+
+        // --- 核心驱动引擎与控制绑定 ---
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const user = document.getElementById('usernameInput').value.trim();
+            if(!user) return alert("初始化终止：签名别名不能为空");
+
+            document.getElementById('loginBtn').disabled = true;
+            document.getElementById('loginBtn').innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> 正在布署端到端算法树...";
+
+            await initIndexedDB();
+            const cryptoResult = await setupSubtleCrypto();
+            localKeyPair = cryptoResult.keyPair;
+            localPublicKeyPem = cryptoResult.pem;
+            currentUserName = user;
+
+            socket = io();
+            socket.on('connect', () => {
+                document.getElementById('myNodeId').textContent = socket.id;
+                document.getElementById('myNodeName').textContent = `@${currentUserName}`;
+                socket.emit('node:online', { username: currentUserName, publicKey: localPublicKeyPem });
+            });
+
+            bindSocketMatrixEvents();
+
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+        });
+
+        // 检索与握手远端
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const tId = document.getElementById('targetIdInput').value.trim();
+            if(!tId || tId === socket.id) return alert("无效的对端特征特征识别码");
+
+            socket.emit('node:search', tId, async (res) => {
+                if(res.success) {
+                    if(!activeConversations[res.node.id]) {
+                        activeConversations[res.node.id] = {
+                            id: res.node.id, username: res.node.username, publicKey: res.node.publicKey, history: []
+                        };
+                        const dbHistory = await loadHistoryFromLocal(res.node.id);
+                        activeConversations[res.node.id].history = dbHistory;
+                    }
+                    document.getElementById('targetIdInput').value = '';
+                    refreshNodeSidebarList();
+                    openConversationChannel(res.node.id);
+                } else { alert(res.message); }
+            });
+        });
+
+        function refreshNodeSidebarList() {
+            const list = document.getElementById('nodesList');
+            list.innerHTML = '';
+            Object.values(activeConversations).forEach(node => {
+                const div = document.createElement('div');
+                div.className = `node-item ${currentLinkedNodeId === node.id ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div class="avatar">${node.username.substring(0,2).toUpperCase()}</div>
+                    <div style="flex:1; overflow:hidden;">
+                        <div class="node-name">@${node.username}</div>
+                        <div class="node-meta-p" style="text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">ID: ${node.id}</div>
+                    </div>
+                `;
+                div.addEventListener('click', () => openConversationChannel(node.id));
+                list.appendChild(div);
+            });
+        }
+
+        async function openConversationChannel(id) {
+            currentLinkedNodeId = id;
+            const node = activeConversations[id];
+            refreshNodeSidebarList();
+
+            document.getElementById('chatHeader').classList.remove('hidden');
+            document.getElementById
